@@ -1,25 +1,52 @@
 const express = require('express');
 const router = express.Router();
 const authMiddleware = require('../middileware/authMiddleware');
-const { checkIn, checkOut, getTodayAttendance, getAllAttendance } = require('../controllers/attendanceController');
+const {
+  checkIn,
+  checkOut,
+  getTodayAttendance,
+  getAllAttendance
+} = require('../controllers/attendanceController');
 const upload = require('../middileware/upload');
 
+/* =========================
+   USER ROUTES
+========================= */
+
+// ✅ Check In (with photo upload)
 router.post(
   "/checkin",
   authMiddleware(["user"]),
   upload.single("photo"),
   checkIn
 );
-router.post('/checkout', authMiddleware(['user']), checkOut);
+
+// ✅ Check Out (FIXED - add upload middleware)
+router.post(
+  "/checkout",
+  authMiddleware(["user"]),
+  upload.single("photo"),
+  checkOut
+);
+
+// ✅ Get Today's Attendance
 router.get(
   "/today",
   authMiddleware(["user"]),
   getTodayAttendance
 );
+
+
+/* =========================
+   ADMIN ROUTES
+========================= */
+
+// ✅ Get All Attendance (Admin Only)
 router.get(
   "/all",
-  authMiddleware(["admin"]), // 🔐 admin only
+  authMiddleware(["admin"]),
   getAllAttendance
 );
 
 module.exports = router;
+  

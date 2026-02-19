@@ -3,15 +3,45 @@ const Attendance = require('../module/attendanceModel');
 const User = require("../module/user");
 exports.checkIn = async (req, res) => {
   try {
+    const userId = req.user.id;
     const { latitude, longitude } = req.body;
 
-    const photoUrl = req.file.path; // Cloudinary URL
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: "Photo is required",
+      });
+    }
+
+    const photoUrl = req.file.path;
+
+    // 🟢 Get start and end of today
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+
+    const end = new Date();
+    end.setHours(23, 59, 59, 999);
+
+    // 🛑 Prevent duplicate check-in
+    const existing = await Attendance.findOne({
+      user: userId,
+      date: { $gte: start, $lte: end },
+    });
+
+    if (existing) {
+      return res.status(400).json({
+        success: false,
+        message: "Already checked in today",
+      });
+    }
+
+    const now = new Date();
 
     const attendance = await Attendance.create({
-      user: req.user.id,
-      date: new Date(),
+      user: userId,
+      date: now,
       checkIn: {
-        time: new Date(),
+        time: now,
         location: { latitude, longitude },
         photo: photoUrl,
       },
@@ -23,7 +53,7 @@ exports.checkIn = async (req, res) => {
     });
 
   } catch (error) {
-    console.log(error);
+    console.log("CheckIn Error:", error);
     res.status(500).json({
       success: false,
       message: "Check-in failed",
@@ -32,53 +62,99 @@ exports.checkIn = async (req, res) => {
 };
 
 
+
 exports.checkOut = async (req, res) => {
   try {
-    const { time, location, photo } = req.body;
     const userId = req.user.id;
+    const { latitude, longitude } = req.body;
 
-    const today = new Date().toISOString().split('T')[0];
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: "Photo is required",
+      });
+    }
+
+    const photoUrl = req.file.path;
+
+    // 🟢 Get start and end of today
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+
+    const end = new Date();
+    end.setHours(23, 59, 59, 999);
 
     const attendance = await Attendance.findOne({
       user: userId,
-      date: today,
+      date: { $gte: start, $lte: end },
     });
 
     if (!attendance || !attendance.checkIn) {
       return res.status(400).json({
         success: false,
-        message: 'Check-in required first',
+        message: "Check-in required first",
       });
     }
 
-    attendance.checkOut = { time, location, photo };
+    if (attendance.checkOut) {
+      return res.status(400).json({
+        success: false,
+        message: "Already checked out today",
+      });
+    }
+
+    const now = new Date();
+
+    attendance.checkOut = {
+      time: now,
+      location: { latitude, longitude },
+      photo: photoUrl,
+    };
 
     await attendance.save();
 
-    res.json({ success: true, message: 'Check-out successful' });
+    res.json({
+      success: true,
+      message: "Check-out successful",
+      data: attendance,
+    });
 
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Check-out failed' });
+    console.log("CheckOut Error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Check-out failed",
+    });
   }
 };
+
 exports.getTodayAttendance = async (req, res) => {
   try {
-    const today = new Date().toISOString().split("T")[0];
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+
+    const end = new Date();
+    end.setHours(23, 59, 59, 999);
 
     const attendance = await Attendance.findOne({
       user: req.user.id,
-      date: today,
-    }).populate("user", "name username email");
+      date: { $gte: start, $lte: end },
+    }).populate("user", "name designation username email");
 
     res.json({
       success: true,
       data: attendance,
     });
+
   } catch (err) {
     console.log("Get Attendance Error:", err);
-    res.status(500).json({ success: false });
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch attendance",
+    });
   }
 };
+
 
 
 exports.getAllAttendance = async (req, res) => {
