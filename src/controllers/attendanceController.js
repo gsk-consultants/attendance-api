@@ -3,38 +3,34 @@ const Attendance = require('../module/attendanceModel');
 const User = require("../module/user");
 exports.checkIn = async (req, res) => {
   try {
-    const { time, location, photo } = req.body;
-    const userId = req.user.id;
+    const { latitude, longitude } = req.body;
 
-    const today = new Date().toISOString().split('T')[0];
+    const photoUrl = req.file.path; // Cloudinary URL
 
-    const existing = await Attendance.findOne({
-      user: userId,
-      date: today,
+    const attendance = await Attendance.create({
+      user: req.user.id,
+      date: new Date(),
+      checkIn: {
+        time: new Date(),
+        location: { latitude, longitude },
+        photo: photoUrl,
+      },
     });
 
-    if (existing && existing.checkIn?.time) {
-      return res.status(400).json({
-        success: false,
-        message: 'Already checked in today',
-      });
-    }
-
-    const attendance = existing || new Attendance({
-      user: userId,
-      date: today,
+    res.status(201).json({
+      success: true,
+      data: attendance,
     });
-
-    attendance.checkIn = { time, location, photo };
-
-    await attendance.save();
-
-    res.json({ success: true, message: 'Check-in successful' });
 
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Check-in failed' });
+    console.log(error);
+    res.status(500).json({
+      success: false,
+      message: "Check-in failed",
+    });
   }
 };
+
 
 exports.checkOut = async (req, res) => {
   try {
