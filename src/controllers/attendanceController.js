@@ -65,8 +65,9 @@ exports.checkIn = async (req, res) => {
 
 exports.checkOut = async (req, res) => {
   try {
-    const { latitude, longitude } = req.body;
     const userId = req.user.id;
+    const { latitude, longitude } = req.body;
+    const photoUrl = req.file?.path;
 
     const startOfDay = new Date();
     startOfDay.setHours(0, 0, 0, 0);
@@ -76,27 +77,23 @@ exports.checkOut = async (req, res) => {
 
     const attendance = await Attendance.findOne({
       user: userId,
-      date: {
-        $gte: startOfDay,
-        $lte: endOfDay,
-      },
+      date: { $gte: startOfDay, $lte: endOfDay },
     });
 
-    if (!attendance || !attendance.checkIn) {
+    if (!attendance) {
       return res.status(400).json({
         success: false,
         message: "Check-in required first",
       });
     }
 
-    if (attendance.checkOut) {
+    // ✅ Only block if time exists
+    if (attendance.checkOut?.time) {
       return res.status(400).json({
         success: false,
         message: "Already checked out today",
       });
     }
-
-    const photoUrl = req.file?.path;
 
     attendance.checkOut = {
       time: new Date(),
@@ -120,6 +117,7 @@ exports.checkOut = async (req, res) => {
     });
   }
 };
+
 
 
 exports.getTodayAttendance = async (req, res) => {
