@@ -65,28 +65,21 @@ exports.checkIn = async (req, res) => {
 
 exports.checkOut = async (req, res) => {
   try {
-    const userId = req.user.id;
     const { latitude, longitude } = req.body;
+    const userId = req.user.id;
 
-    if (!req.file) {
-      return res.status(400).json({
-        success: false,
-        message: "Photo is required",
-      });
-    }
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
 
-    const photoUrl = req.file.path;
-
-    // 🟢 Get start and end of today
-    const start = new Date();
-    start.setHours(0, 0, 0, 0);
-
-    const end = new Date();
-    end.setHours(23, 59, 59, 999);
+    const endOfDay = new Date();
+    endOfDay.setHours(23, 59, 59, 999);
 
     const attendance = await Attendance.findOne({
       user: userId,
-      date: { $gte: start, $lte: end },
+      date: {
+        $gte: startOfDay,
+        $lte: endOfDay,
+      },
     });
 
     if (!attendance || !attendance.checkIn) {
@@ -103,10 +96,10 @@ exports.checkOut = async (req, res) => {
       });
     }
 
-    const now = new Date();
+    const photoUrl = req.file?.path;
 
     attendance.checkOut = {
-      time: now,
+      time: new Date(),
       location: { latitude, longitude },
       photo: photoUrl,
     };
@@ -120,13 +113,14 @@ exports.checkOut = async (req, res) => {
     });
 
   } catch (error) {
-    console.log("CheckOut Error:", error);
+    console.log("Checkout Error:", error);
     res.status(500).json({
       success: false,
       message: "Check-out failed",
     });
   }
 };
+
 
 exports.getTodayAttendance = async (req, res) => {
   try {

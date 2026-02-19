@@ -21,13 +21,13 @@ router.post(
   checkIn
 );
 
-// ✅ Check Out (FIXED - add upload middleware)
 router.post(
   "/checkout",
   authMiddleware(["user"]),
   upload.single("photo"),
   checkOut
 );
+
 
 // ✅ Get Today's Attendance
 router.get(
@@ -49,4 +49,3 @@ router.get(
 );
 
 module.exports = router;
-  
