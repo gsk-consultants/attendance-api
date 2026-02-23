@@ -19,6 +19,7 @@ const attendanceSchema = new mongoose.Schema({
       longitude: Number,
     },
     photo: String,
+    status: String, // OnTime / Late
   },
 
   checkOut: {
@@ -28,8 +29,9 @@ const attendanceSchema = new mongoose.Schema({
       longitude: Number,
     },
     photo: String,
+    status: String, // Early / OnTime
   },
 
+  workingHours: String, // 8h 32m
 }, { timestamps: true });
-
 module.exports = mongoose.model('Attendance', attendanceSchema);
