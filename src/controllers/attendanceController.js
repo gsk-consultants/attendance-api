@@ -1,45 +1,55 @@
 const Attendance = require('../module/attendanceModel');
  
 const User = require("../module/user");
+const getLocalDate = () =>
+  new Date().toLocaleDateString("en-CA", {
+    timeZone: "Asia/Karachi", // ← change to yours
+  });
+
 exports.checkIn = async (req, res) => {
   try {
     const { time, location, photo } = req.body;
     const userId = req.user.id;
 
     const now = new Date();
-    const today = now.toISOString().split('T')[0];
+    
+    // ✅ Use timezone-aware date string for IST (UTC+5:30)
+    const today = new Date().toLocaleDateString("en-CA", {
+      timeZone: "Asia/Karachi", // Change to your timezone: "Asia/Kolkata" for India
+    }); // gives "YYYY-MM-DD" in your local timezone
 
-    const officeStart = new Date();
-    officeStart.setHours(10, 30, 0, 0);
+    // ✅ Compare hours in LOCAL time, not UTC
+    const localHour = parseInt(
+      new Date().toLocaleString("en-US", {
+        timeZone: "Asia/Karachi", // your timezone
+        hour: "numeric",
+        hour12: false,
+      })
+    );
+    const localMinute = parseInt(
+      new Date().toLocaleString("en-US", {
+        timeZone: "Asia/Karachi",
+        minute: "numeric",
+      })
+    );
 
-    const status = now <= officeStart ? "OnTime" : "Late";
+    // OnTime if before 10:30 local time
+    const totalMinutes = localHour * 60 + localMinute;
+    const officeStartMinutes = 10 * 60 + 30; // 10:30 = 630 mins
 
-    let attendance = await Attendance.findOne({
-      user: userId,
-      date: today,
-    });
+    const status = totalMinutes <= officeStartMinutes ? "OnTime" : "Late";
+
+    let attendance = await Attendance.findOne({ user: userId, date: today });
 
     if (attendance && attendance.checkIn?.time) {
-      return res.status(400).json({
-        success: false,
-        message: "Already checked in today",
-      });
+      return res.status(400).json({ success: false, message: "Already checked in today" });
     }
 
     if (!attendance) {
-      attendance = new Attendance({
-        user: userId,
-        date: today,
-      });
+      attendance = new Attendance({ user: userId, date: today });
     }
 
-    attendance.checkIn = {
-      time: now,
-      location,
-      photo,
-      status,
-    };
-
+    attendance.checkIn = { time: now, location, photo, status };
     await attendance.save();
 
     res.json({
@@ -49,6 +59,7 @@ exports.checkIn = async (req, res) => {
     });
 
   } catch (error) {
+    console.log(error);
     res.status(500).json({ success: false });
   }
 };
@@ -60,7 +71,7 @@ exports.checkOut = async (req, res) => {
     const userId = req.user.id;
 
     const now = new Date();
-    const today = now.toISOString().split('T')[0];
+  const today = getLocalDate();
 
     const attendance = await Attendance.findOne({
       user: userId,
@@ -142,7 +153,20 @@ exports.getTodayAttendance = async (req, res) => {
     });
   }
 };
+exports.getMyAttendance = async (req, res) => {
+  try {
+    const records = await Attendance.find({
+      user: req.user.id,
+    }).sort({ date: -1 });
 
+    res.json({
+      success: true,
+      data: records,
+    });
+  } catch (err) {
+    res.status(500).json({ success: false });
+  }
+};
 
 exports.getAllAttendance = async (req, res) => {
   try {

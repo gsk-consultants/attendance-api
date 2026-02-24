@@ -5,7 +5,8 @@ const {
   checkIn,
   checkOut,
   getTodayAttendance,
-  getAllAttendance
+  getAllAttendance,
+  getMyAttendance
 } = require('../controllers/attendanceController');
 const upload = require('../middileware/upload');
 
@@ -36,7 +37,11 @@ router.get(
   getTodayAttendance
 );
 
-
+router.get(
+  "/mine",
+  authMiddleware(["user"]),
+  getMyAttendance
+);
 /* =========================
    ADMIN ROUTES
 ========================= */
