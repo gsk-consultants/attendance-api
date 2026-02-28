@@ -36,7 +36,8 @@ app.use("/api/auth", require("./src/routes/authRoute"));
 app.use("/api/user", require("./src/routes/userRoute"));
 app.use("/api/attendance", require("./src/routes/attendanceRoute"));
 app.use("/api/admin", require("./src/routes/adminRoute"));
-
+const leaveRoutes = require("./src/routes/leaveRoutes");
+app.use("/api/leave", leaveRoutes);
 /* =========================
    DEFAULT ROUTE
 ========================= */
