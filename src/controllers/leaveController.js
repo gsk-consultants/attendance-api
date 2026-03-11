@@ -32,8 +32,6 @@ exports.requestLeave = async (req, res) => {
   }
 };
 
-
-
 // 📌 User - Get My Leaves
 exports.getMyLeaves = async (req, res) => {
   try {
