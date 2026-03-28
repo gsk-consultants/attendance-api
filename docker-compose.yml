@@ -1,11 +1,13 @@
-version: "3.9"
+version: "3.8"
 
 services:
-  attendance-api:
+  api:
     build: .
-    container_name: attendance_api
-    restart: always
+    container_name: dbskills-attendance-api
     ports:
-      - "4000:4000"
+      - "8082:6001"
     env_file:
       - .env
+    restart: always
+    volumes:
+      - ./uploads:/app/uploads
